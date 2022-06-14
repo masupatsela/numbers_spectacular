@@ -1,19 +1,3 @@
-export const config = {
-  type: Phaser.AUTO,
-  width: 344,
-  height: 491,
-  physics: {
-    default: 'arcade',
-    arcade: {
-      gravity: {
-        y: 200
-      },
-      debug: true
-    }
- }
- scene: [Game]
-}
+import {config} from "./globals.js"
 
-new Phaser.Game(config)
-
-
+let game = new Phaser.Game(config);

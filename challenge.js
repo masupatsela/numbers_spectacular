@@ -5,15 +5,14 @@
 @Copyright (c) 2022, Teboho Thabo Thage
 */
 
-"use strict";
+" use strict";
 
-import {config, gameState, sounds, recordedScores, gameResults,  GAMESTATE_KEY} from "./globals.js"
+import {config, gameState, gameResults,  sounds, recordedScores, GAMESTATE_KEY} from "./globals.js"
 import Game from "./play.js"
 
-
-export default class Level extends Phaser.Scene{
+export default class Challenge extends Phaser.Scene{
   constructor(){
-    super("level");
+    super("challenge");
   }
   
   init(){
@@ -31,16 +30,12 @@ export default class Level extends Phaser.Scene{
     this.isGameOver = false;
     this.roundCompleted = false;
     
-    // Collection of game boards
-    this.boards = [];
-    
     this.game = new Game(this, localStorage.getItem(GAMESTATE_KEY));//game logic controller
-   
-    this.MAX_TIME = 300;
   }// init
   
   preload(){
-    this.loadGameBoards();
+    // Load game board
+    this.load.image("board1", "img/board1.png");
     this.loadSounds();
     
     this.load.image("tick", "img/tick.png");
@@ -53,17 +48,18 @@ export default class Level extends Phaser.Scene{
   }// preload
   
   create(){
-    this.cameras.main.setBackgroundColor("#87CEEB");
+      this.cameras.main.setBackgroundColor("#000");
+      
+      // Add game board
+      this.board1 = this.setBoardProperties("board1", config.width / 2, config.height / 2, this.GUIdepth.front, this.game);
+      this.boardClickHandler(this.board1);
+      
+     // Adds score, time and answer indicator
+     this.timeText = this.addGameHUD();
     
-    // Adds game board
-    this.addGameBoards();
-    
-    // Adds score, time and answer indicator
-    this.timeText = this.addGameHUD();
-    
-    // Adds button and expression label
-    this.addGenButton();
-    
+     // Adds button and expression label
+     this.addGenButton();
+     
     // adds player to the scene
     this.addPlayer();
     
@@ -71,9 +67,7 @@ export default class Level extends Phaser.Scene{
     this.startText.depth = this.GUIdepth.slide;
     
      this.time.addEvent({delay: 1500, callback: this.startSlide, callbackScope: this, loop: false});
-    
-     this.endRoundText = this.add.text(50, config.height / 2 - 50 , " ROUND\nCOMPLETED!", {fontSize: 40, color: "#ff0000", backgroundColor: "#ffffff"});
-    this.endRoundText.depth = this.GUIdepth.back;
+     
     
     this.gameover = this.add.image(config.width / 2, config.height / 2, "gameOver");
     this.gameover.setScale(0.6324, 1);
@@ -86,53 +80,63 @@ export default class Level extends Phaser.Scene{
     this.MAX_TIME = this.game.counter;
     
     // Start the timer
-    let timedEvent = this.time.addEvent({delay: 2000, callback: this.decreaseTimer, callbackScope: this, loop: true});
+    let timedEvent = this.time.addEvent({delay: 1000, callback: this.decreaseTimer, callbackScope: this, loop: true});
     
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, (cam, effect) => {
-            if(!this.isGameOver){
-             this.scene.start("level");
-            }
-            else {
              this.scene.start("results");
-            }
       });
   }// create
   
   /**
-   * Loads game boards
+   * Loads the sounds into the game
    */
-  loadGameBoards(){
-   this.load.image("board1", "img/board1.png");
-   this.load.image("board2", "img/board2.jpg");
-   this.load.image("board3", "img/board3.jpg");
-   this.load.image("board4", "img/board4.jpg");
-   this.load.image("board5", "img/board5.jpg");
-  }// loadGameBoards
+  loadSounds(){
+     this.load.audio("correctSound", sounds[0]);
+     
+     this.load.audio("incorrectSound", sounds[1]);
+     
+     this.load.audio("ladderUpSound", sounds[2]);
+     
+     this.load.audio("downSnakeSound", sounds[4]);
+     
+  this.load.audio("roundEndSound", sounds[6]);
+  
+  this.load.audio("gameEndSound", sounds[5]);
+  }// loadSounds
   
   /**
-   * Adds the game boards to scene
+   * Adds sounds to the scene
    */
-  addGameBoards(){
-    this.board1 = this.setBoardProperties("board1", config.width / 2, config.height / 2, this.GUIdepth.back, this.game);
-    this.boardClickHandler(this.board1);
-    this.boards.push(this.board1);
+  addSounds(){
+     const correctSound = this.sound.add("correctSound");
+     
+     const incorrectSound = this.sound.add("incorrectSound");
+     
+     const ladderUpSound = this.sound.add("ladderUpSound");
+  
+     const downSnakeSound = this.sound.add("downSnakeSound");
+     
+     const roundEndSound = this.sound.add("roundEndSound");
+     
+     const gameEndSound = this.sound.add("gameEndSound");
+     
+     return [correctSound, incorrectSound, ladderUpSound, downSnakeSound, roundEndSound, gameEndSound];
+  }// addSounds
+  
+  /**
+   * Adds board to the scene
+   * @param {string} url of the board image
+   * @param {number} x x coordinate
+   * @param {number} y y coordinate
+   * @param {number} depth  depth position
+   */
+  setBoardProperties(name, x, y, depth, game){
+    const board = this.add.image(x, y, name);
+    board.setScale(0.9885, 1);
+    board.depth = depth;
     
-    this.board2 = this.setBoardProperties("board2", config.width / 2, config.height / 2, this.GUIdepth.back, this.game);
-    this.boardClickHandler(this.board2);
-    this.boards.push(this.board2);
-    
-    this.board3 = this.setBoardProperties("board3", config.width / 2, config.height / 2, this.GUIdepth.back, this.game);
-    this.boardClickHandler(this.board3);
-    this.boards.push(this.board3);
-    
-    this.board4 = this.setBoardProperties("board4", config.width / 2, config.height / 2, this.GUIdepth.back, this.game);
-    this.boardClickHandler(this.board4);
-    this.boards.push(this.board4);
-    
-    this.board5 = this.setBoardProperties("board5", config.width / 2, config.height / 2, this.GUIdepth.back, this.game);
-    this.boardClickHandler(this.board5);
-    this.boards.push(this.board5);
-  }// loadGameBoard
+    return board;
+  }// setBoardProperties
   
   /**
    * Adds click events for the board
@@ -148,34 +152,6 @@ export default class Level extends Phaser.Scene{
       }  
     });
   }// boardClickHandler
-  
-  /**
-   * Adds board to the scene
-   * @param {string} url of the board image
-   * @param {number} x x-coordinate
-   * @param {number} y y coordinate
-   * @param {number} depth  depth position
-   */
-  setBoardProperties(name, x, y, depth, game){
-    const board = this.add.image(x, y, name);
-    if(name === "board1")
-      board.setScale(0.9885, 1);
-    else  if(name === "board2")
-      board.setScale(1.075, 1.0972);
-    else  if(name === "board3")
-      board.setScale(0.4247, 0.4310);
-    else  if(name === "board4")
-      board.setScale(0.3353, 0.4861);
-    else  if(name === "board5")
-      board.setScale(0.3346, 0.4854);
-    board.depth = depth;
-    
-    // Display correct board for current round
-    if(name[name.length-1] == game.roundNum){
-        board.depth = this.GUIdepth.front;
-    }
-    return board;
-  }// setBoardProperties
   
   /**
    * Adds the game HUD to the scene
@@ -225,7 +201,7 @@ export default class Level extends Phaser.Scene{
     }, this);   
       
     // add expression text
-    this.expr = this.add.text(config.width / 2 + 30, 440, "0 + 0 =", {fontSize: 20, color: "#DC143C"});
+    this.expr = this.add.text(config.width / 2 + 30, 440, "0 + 0 =", {fontSize: 20, color: "#fff"});
     this.expr.setScale(1, 2);
     this.expr.depth = this.GUIdepth.front
   } //addGenButton
@@ -265,7 +241,7 @@ export default class Level extends Phaser.Scene{
     const yCoord = config.height / 2 + (board.displayHeight / 2) - 1.5 * this.player.displayHeight - yIndex * (board.displayHeight / NUM_ROWS);
     
     return {xCoord, yCoord};
-  }//setPlayerPosition
+   }//setPlayerPosition
   
   /**
    * Positions the player on the grid
@@ -274,64 +250,6 @@ export default class Level extends Phaser.Scene{
      const {xCoord, yCoord} = this.setPlayerPosition(xIndex, yIndex, board);
      this.player.setPosition(xCoord, yCoord);
   }// positionPlayer
-  
-  /**
-   * Loads the sounds into the game
-   */
-  loadSounds(){
-     this.load.audio("correctSound", sounds[0]);
-     
-     this.load.audio("incorrectSound", sounds[1]);
-     
-     this.load.audio("ladderUpSound", sounds[2]);
-     
-     this.load.audio("downSnakeSound", sounds[4]);
-     
-  this.load.audio("roundEndSound", sounds[6]);
-  
-  this.load.audio("gameEndSound", sounds[5]);
-  }// loadSounds
-  
-  /**
-   * Adds sounds to the scene
-   */
-  addSounds(){
-     const correctSound = this.sound.add("correctSound");
-     
-     const incorrectSound = this.sound.add("incorrectSound");
-     
-     const ladderUpSound = this.sound.add("ladderUpSound");
-  
-     const downSnakeSound = this.sound.add("downSnakeSound");
-     
-     const roundEndSound = this.sound.add("roundEndSound");
-     
-     const gameEndSound = this.sound.add("gameEndSound");
-     
-     return [correctSound, incorrectSound, ladderUpSound, downSnakeSound, roundEndSound, gameEndSound];
-  }// addSounds
-  
-  /**
-   * Decreases the timer
-   */
-  decreaseTimer(){
-      if(this.game.counter <= 0){
-          this.endRound();
-          return;
-      } 
-      this.game.counter -= 1;
-      this.timeText.text = `TIME: ${this.game.counter}`;
-  }// decreaseTimer
-  
-  /**
-   * Ends the current round
-   */
-  endRound(){
-    this.isButtonEnabled = false;
-    this.endRoundText.depth = this.GUIdepth.slide;
-    
-    this.time.addEvent({delay: 2000, callback: this.nextRound, callbackScope: this, loop: false});
-  }// endRound
   
   /**
    * Starts the animation that clears beginning round message
@@ -350,52 +268,54 @@ export default class Level extends Phaser.Scene{
       }
   }// slideLeft
   
+  /**
+   * Decreases the timer
+   */
+  decreaseTimer(){
+      if(this.game.gameover)return;
+      if(this.game.counter <= 0){
+          this.endRound();
+          return;
+      } 
+      this.game.counter -= 1;
+      this.timeText.text = `TIME: ${this.game.counter}`;
+  }// decreaseTimer
+  
+  /**
+   * Ends the current round
+   */
+  endRound(){
+    this.isButtonEnabled = false;
+    this.time.addEvent({delay: 1000, callback: this.enterGameOverState, callbackScope: this, loop: false});
+  }// endRound
+  
    /**
-    * Starts the next round
+    * Ends the current game
     */
-  nextRound(){
+  enterGameOverState(){
       if(this.isGameOver) return;
-      // Clear the end round message
-      this.endRoundText.depth = this.GUIdepth.back;
-      // Reset the display board depths
-      this.boards.map(item => {
-          item.depth = 0;
-      });
       // Update global game state
       const state = JSON.parse(localStorage.getItem(GAMESTATE_KEY));
-      state.round = this.game.roundNum + 1;
       state.totalTime += this.game.counter;
-      state.time = state.isChallenge ? 15: 300;
-      state.index = "00";
-      const MAX_ROUND = 5; // maximum number of rounds
       // End the game after final round
-      if(state.round >  MAX_ROUND && !(this.isGameOver)){
-        state.gameOver = true;
-        this.isGameOver = true;
-        this.endGame = true;
-        this.endRoundText.visible = false;
-        this.gameover.depth = this.GUIdepth.slide;
-        this.gameEndSound.play();
-        localStorage.setItem(GAMESTATE_KEY, JSON.stringify(state));
-      }
-      else {
-        localStorage.setItem(GAMESTATE_KEY, JSON.stringify(state));
-       this.fadeToNextScene(state.gameOver);
-      }
-  }// nextRound
- 
+      state.gameOver = true;
+      this.isGameOver = true;
+      this.gameover.depth = this.GUIdepth.slide;
+      this.gameEndSound.play();
+      
+      localStorage.setItem(GAMESTATE_KEY, JSON.stringify(state));
+      this.endGame = true;
+  }// enterGameOverState
+  
   /**
-   * Sets delay before fadeout and starts fadeout
+   * Starts fadeout into next scen
    */
- fadeToNextScene(gameOver){
-    if(!gameOver){
-       this.roundEndSound.play();
-   }
+ fadeToNextScene(){
     this.cameras.main.fadeOut(1000, 0, 0, 0);
   }// fadeToNextScene
   
   update(){
-     if(this.game.finalPosition === "99" && !this.roundCompleted){
+     if((this.game.gameover || this.game.finalPosition === "99") && !this.roundCompleted){
          this.roundCompleted = true;
          this.endRound();
      }
@@ -407,7 +327,7 @@ export default class Level extends Phaser.Scene{
         this.displayScoresResults();
       }
   }// update
- 
+  
   /**
    * Load next scene to display player final score
    */
@@ -425,17 +345,8 @@ export default class Level extends Phaser.Scene{
     gameResults.precision = data.precision;
     gameResults.playTime = data.playTime;
     gameResults.finalScore = data.finalScore;
-        
-     this.fadeToNextScene(this.isGameOver);
+    
+     this.fadeToNextScene();
   }// displayStats
-  
-  startTime(correct, time){
-      let nextStage = this.state.nextStage;
-      if(correct === 2 && this.bonusStage === nextStage){
-          this.state.nextStage = 2;
-          keepTime.start = time;
-          keepTime.end = keepTime.start + 2000;
-          console.log(`START: ${keepTime.start}, END: ${keepTime.end}`);
-      }
-  }//startTime
 }
+  
